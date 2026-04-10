@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <div class="header-content">
+            <h1>Admin Dashboard</h1>
+            <p>Welcome to the TrendVault admin panel</p>
+        </div>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-outline">Logout</a>
+    </div>
+
+    <div class="admin-nav">
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">Dashboard</a>
+        <a href="{{ url_for('admin_products') }}" class="nav-link">Products</a>
+        <a href="{{ url_for('admin_orders') }}" class="nav-link">Orders</a>
+    </div>
+
+    <div class="admin-content">
+        <section class="stats-section">
+            <h2>Stats</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.products }}</div>
+                    <div class="stat-label">Active Products</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.orders }}</div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${{ "%.2f"|format(stats.revenue) }}</div>
+                    <div class="stat-label">Revenue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.pending_orders }}</div>
+                    <div class="stat-label">Pending Orders</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="actions-section">
+            <h2>Actions</h2>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="syncProducts()">Sync Products</button>
+                <a href="{{ url_for('admin_products') }}" class="btn btn-secondary">Manage Products</a>
+                <a href="{{ url_for('admin_orders') }}" class="btn btn-secondary">Manage Orders</a>
+            </div>
+            <div id="sync-status" class="sync-status hidden"></div>
+        </section>
+
+        {% if recent_orders %}
+            <section class="recent-orders-section">
+                <h2>Recent Orders</h2>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.id }}</td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td>{{ order.customer_email }}</td>
+                                    <td>${{ "%.2f"|format(order.total) }}</td>
+                                    <td><span class="status-badge status-{{ order.status }}">{{ order.status }}</span></td>
+                                    <td>{{ order.created_at[:10] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if products %}
+            <section class="products-section">
+                <h2>Recent Products</h2>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Rating</th>
+                                <th>Orders</th>
+                                <th>Featured</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products[:10] %}
+                                <tr>
+                                    <td>{{ product.title[:40] }}</td>
+                                    <td>${{ "%.2f"|format(product.price) }}</td>
+                                    <td>{{ product.rating }}/5</td>
+                                    <td>{{ product.orders_count }}</td>
+                                    <td>
+                                        <button class="btn btn-sm" onclick="toggleFeatured('{{ product.id }}', {{ product.featured|lower }})"
+                                            class="{% if product.featured %}btn-primary{% else %}btn-outline{% endif %}">
+                                            {% if product.featured %}Featured{% else %}Not Featured{% endif %}
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+async function syncProducts() {
+    const statusDiv = document.getElementById('sync-status');
+    const button = event.target;
+    button.disabled = true;
+
+    statusDiv.classList.remove('hidden');
+    statusDiv.textContent = 'Syncing products...';
+    statusDiv.className = 'sync-status';
+
+    try {
+        const response = await fetch('{{ url_for("admin_sync") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await response.json();
+        if (data.success) {
+            statusDiv.textContent = 'Successfully synced! Added ' + data.added + ' new products.';
+            statusDiv.className = 'sync-status success';
+        } else {
+            statusDiv.textContent = 'Error: ' + data.error;
+            statusDiv.className = 'sync-status error';
+        }
+    } catch (error) {
+        statusDiv.textContent = 'Error syncing products: ' + error;
+        statusDiv.className = 'sync-status error';
+    }
+
+    button.disabled = false;
+}
+
+async function toggleFeatured(productId, isFeatured) {
+    try {
+        await fetch('{{ url_for("toggle_featured") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_id: productId }),
+        });
+        location.reload();
+    } catch (error) {
+        console.error('Error toggling featured:', error);
+    }
+}
+</script>
+{% endblock %}

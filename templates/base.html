@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ store.name }}{% endblock %}</title>
+    <meta name="description" content="{% block meta_desc %}{{ store.tagline }}{% endblock %}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/store.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <div id="announcement-bar" class="announcement-bar">
+        Free shipping on orders over $50 | Use code SAVE10 for 10% off
+    </div>
+
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="{{ url_for('index') }}" class="logo">{{ store.name }}</a>
+                <span class="tagline-small">{{ store.tagline }}</span>
+            </div>
+            <div class="navbar-search">
+                <form action="{{ url_for('shop') }}" method="GET">
+                    <input type="text" name="q" placeholder="Search products..." class="search-input">
+                    <button type="submit" class="search-btn">Search</button>
+                </form>
+            </div>
+            <div class="navbar-actions">
+                <a href="{{ url_for('cart') }}" class="cart-link">
+                    <span class="cart-icon">🛒</span>
+                    {% if cart_count > 0 %}
+                        <span class="cart-badge">{{ cart_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('admin_login') }}" class="admin-link">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="category-strip">
+        <div class="container">
+            <div class="category-list">
+                <a href="{{ url_for('shop') }}" class="category-item">All Products</a>
+                {% for cat in categories[:5] %}
+                    <a href="{{ url_for('shop', category=cat.name) }}" class="category-item">
+                        {{ cat.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>{{ store.name }}</h4>
+                    <p>{{ store.tagline }}</p>
+                    <p class="footer-desc">Curated deals on trending products, delivered fast.</p>
+                </div>
+                <div class="footer-col">
+                    <h5>Shop</h5>
+                    <ul>
+                        <li><a href="{{ url_for('shop') }}">All Products</a></li>
+                        {% for cat in categories[:4] %}
+                            <li><a href="{{ url_for('shop', category=cat.name) }}">{{ cat.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h5>Customer</h5>
+                    <ul>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">Shipping Info</a></li>
+                        <li><a href="#">Returns</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h5>Legal</h5>
+                    <ul>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 {{ store.name }}. All rights reserved.</p>
+                <p>Secure payments powered by <a href="#">Stripe</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/store.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

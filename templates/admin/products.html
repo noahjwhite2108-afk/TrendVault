@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Products - {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1>Products Management</h1>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-outline">Logout</a>
+    </div>
+
+    <div class="admin-nav">
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
+        <a href="{{ url_for('admin_products') }}" class="nav-link active">Products</a>
+        <a href="{{ url_for('admin_orders') }}" class="nav-link">Orders</a>
+    </div>
+
+    <div class="admin-content">
+        <section class="search-section">
+            <h2>Search Products</h2>
+            <form action="{{ url_for('admin_products') }}" method="GET" class="search-form">
+                <input type="text" name="q" value="{{ search or '' }}" placeholder="Search by product name..." class="form-control">
+                <button type="submit" class="btn btn-secondary">Search</button>
+                {% if search %}
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-outline">Clear</a>
+                {% endif %}
+            </form>
+        </section>
+
+        {% if products %}
+            <section class="products-section">
+                <h2>Products ({{ products|length }})</h2>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Rating</th>
+                                <th>Orders</th>
+                                <th>Stock</th>
+                                <th>Featured</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                                <tr>
+                                    <td class="cell-small">{{ product.id[:8] }}</td>
+                                    <td class="cell-title">
+                                        <a href="{{ url_for('product', slug=product.slug) }}" target="_blank">
+                                            {{ product.title[:40] }}{% if product.title|length > 40 %}...{% endif %}
+                                        </a>
+                                    </td>
+                                    <td>{{ product.category }}</td>
+                                    <td class="cell-price">${{ "%.2f"|format(product.price) }}</td>
+                                    <td>{{ product.rating }}/5</td>
+                                    <td>{{ product.orders_count }}</td>
+                                    <td>{{ product.stock }}</td>
+                                    <td>
+                                        <button class="btn btn-sm {% if product.featured %}btn-primary{% else %}btn-outline{% endif %}"
+                                            onclick="toggleFeatured('{{ product.id }}')">
+                                            {% if product.featured %}Yes{% else %}No{% endif %}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('product', slug=product.slug) }}" class="btn btn-sm btn-outline" target="_blank">View</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% else %}
+            <div class="empty-state">
+                <p>No products found. Try a different search.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+async function toggleFeatured(productId) {
+    try {
+        await fetch('{{ url_for("toggle_featured") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_id: productId }),
+        });
+        location.reload();
+    } catch (error) {
+        console.error('Error toggling featured:', error);
+    }
+}
+</script>
+{% endblock %}

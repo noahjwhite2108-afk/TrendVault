@@ -1,0 +1,49 @@
+<article class="product-card">
+    <div class="card-image">
+        {% if product.images %}
+            <img src="{{ product.images[0] }}" alt="{{ product.title }}" loading="lazy">
+        {% else %}
+            <div class="placeholder-image">No Image</div>
+        {% endif %}
+        {% if product.featured %}
+            <span class="badge badge-featured">Featured</span>
+        {% endif %}
+    </div>
+
+    <div class="card-body">
+        <a href="{{ url_for('product', slug=product.slug) }}" class="card-title">
+            {{ product.title[:50] }}{% if product.title|length > 50 %}...{% endif %}
+        </a>
+
+        {% if product.short_desc %}
+            <p class="card-desc">{{ product.short_desc[:80] }}...</p>
+        {% endif %}
+
+        <div class="card-rating">
+            <span class="rating-stars">
+                {% if product.rating >= 4.5 %}⭐⭐⭐⭐⭐
+                {% elif product.rating >= 4 %}⭐⭐⭐⭐
+                {% elif product.rating >= 3 %}⭐⭐⭐
+                {% else %}⭐⭐
+                {% endif %}
+            </span>
+            <span class="rating-text">({{ product.orders_count }}+)</span>
+        </div>
+
+        <div class="card-pricing">
+            <span class="price">${{ "%.2f"|format(product.price) }}</span>
+            {% if product.compare_price and product.compare_price > product.price %}
+                <span class="original-price">${{ "%.2f"|format(product.compare_price) }}</span>
+            {% endif %}
+        </div>
+
+        <div class="card-actions">
+            <button class="btn btn-primary btn-block btn-card-add" onclick="addToCart('{{ product.id }}', 1)">
+                Add to Cart
+            </button>
+            <a href="{{ url_for('product', slug=product.slug) }}" class="btn btn-outline btn-block">
+                View Details
+            </a>
+        </div>
+    </div>
+</article>

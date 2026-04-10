@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="container checkout-container">
+    <h1>Checkout</h1>
+
+    <div class="checkout-layout">
+        <div class="checkout-form-section">
+            <form id="checkoutForm" class="checkout-form">
+                <fieldset>
+                    <legend>Shipping Information</legend>
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" name="address_line1" required class="form-control">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State/Province</label>
+                            <input type="text" id="state" name="state" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="zip">ZIP/Postal Code</label>
+                            <input type="text" id="zip" name="zip" required class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <input type="text" id="country" name="country" value="United States" class="form-control">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Payment Method</legend>
+                    {% if stripe_enabled %}
+                        <div id="payment-element"></div>
+                        <div id="payment-message" class="hidden"></div>
+                    {% else %}
+                        <div class="demo-payment-notice">
+                            <p>Stripe is not configured. Using demo mode.</p>
+                            <p>Click "Place Order" to complete a demo purchase.</p>
+                        </div>
+                    {% endif %}
+                </fieldset>
+
+                <button type="submit" class="btn btn-primary btn-lg btn-block" id="submit-btn">
+                    {% if stripe_enabled %}
+                        Pay ${{ "%.2f"|format(summary.total) }}
+                    {% else %}
+                        Place Order (Demo)
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+
+        <div class="checkout-summary-section">
+            <div class="order-summary sticky">
+                <h2>Order Summary</h2>
+                <div class="summary-items">
+                    {% for item_id, item in cart.items() %}
+                        <div class="summary-item">
+                            <span class="item-summary">
+                                {{ item.title[:40] }}{% if item.title|length > 40 %}...{% endif %} x {{ item.qty }}
+                            </span>
+                            <span class="item-price">${{ "%.2f"|format(item.price * item.qty) }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span>${{ "%.2f"|format(summary.subtotal) }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping:</span>
+                    <span>
+                        {% if summary.shipping == 0 %}
+                            Free
+                        {% else %}
+                            ${{ "%.2f"|format(summary.shipping) }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Total:</span>
+                    <span>${{ "%.2f"|format(summary.total) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if stripe_enabled %}
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+    const stripe = Stripe('{{ stripe_pub }}');
+    let elements;
+    let paymentIntentId;
+
+    async function initializeStripe() {
+        try {
+            const response = await fetch('{{ url_for("create_payment_intent") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await response.json();
+
+            if (!elements) {
+                elements = stripe.elements({ clientSecret: data.clientSecret });
+                const paymentElement = elements.create('payment');
+                paymentElement.mount('#payment-element');
+            }
+            paymentIntentId = data.clientSecret.split('_secret_')[0];
+        } catch (error) {
+            console.error('Error initializing Stripe:', error);
+        }
+    }
+
+    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+
+        try {
+            const { error, paymentIntent } = await stripe.confirmPayment({
+                elements,
+                confirm: true,
+                redirect: 'if_required',
+            });
+
+            if (error) {
+                document.getElementById('payment-message').textContent = error.message;
+                document.getElementById('payment-message').classList.remove('hidden');
+                submitBtn.disabled = false;
+            } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                completeCheckout(paymentIntent.id);
+            }
+        } catch (err) {
+            console.error('Checkout error:', err);
+            submitBtn.disabled = false;
+        }
+    });
+
+    initializeStripe();
+
+    async function completeCheckout(paymentIntentId) {
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            address_line1: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value,
+            zip: document.getElementById('zip').value,
+            country: document.getElementById('country').value,
+            payment_intent_id: paymentIntentId,
+        };
+
+        try {
+            const response = await fetch('{{ url_for("checkout_confirm") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '{{ url_for("order_success", order_id="") }}' + data.order_id;
+            }
+        } catch (error) {
+            console.error('Error completing checkout:', error);
+        }
+    }
+    </script>
+{% else %}
+    <script>
+    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            address_line1: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value,
+            zip: document.getElementById('zip').value,
+            country: document.getElementById('country').value,
+        };
+
+        try {
+            const response = await fetch('{{ url_for("checkout_demo_confirm") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '{{ url_for("order_success", order_id="") }}' + data.order_id;
+            }
+        } catch (error) {
+            console.error('Error completing checkout:', error);
+        }
+    });
+    </script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmed - {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="container order-success-container">
+    <div class="success-card">
+        <div class="success-icon">✓</div>
+        <h1>Order Confirmed!</h1>
+        <p class="success-message">Thank you for your purchase. Your order has been received.</p>
+
+        <div class="order-details">
+            <div class="order-info">
+                <h2>Order Details</h2>
+                <div class="info-row">
+                    <span class="label">Order Number:</span>
+                    <span class="value">{{ order.id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Order Date:</span>
+                    <span class="value">{{ order.created_at }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Status:</span>
+                    <span class="value status-{{ order.status }}">{{ order.status|upper }}</span>
+                </div>
+            </div>
+
+            <div class="customer-info">
+                <h2>Shipping To</h2>
+                <p>{{ order.customer_name }}</p>
+                <p>{{ order.customer_email }}</p>
+                {% if order.customer_address %}
+                    <p>
+                        {{ order.customer_address.get('line1', '') }}<br>
+                        {{ order.customer_address.get('city', '') }}, {{ order.customer_address.get('state', '') }}
+                        {{ order.customer_address.get('zip', '') }}<br>
+                        {{ order.customer_address.get('country', 'US') }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="order-items">
+                <h2>Items Ordered</h2>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                            <tr>
+                                <td>{{ item.title }}</td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                <td>{{ item.qty }}</td>
+                                <td>${{ "%.2f"|format(item.price * item.qty) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="order-totals">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>${{ "%.2f"|format(order.subtotal) }}</span>
+                </div>
+                <div class="total-row">
+                    <span>Shipping:</span>
+                    <span>${{ "%.2f"|format(order.shipping) }}</span>
+                </div>
+                <div class="total-row total-amount">
+                    <span>Total:</span>
+                    <span>${{ "%.2f"|format(order.total) }}</span>
+                </div>
+            </div>
+
+            <div class="next-steps">
+                <h2>What's Next?</h2>
+                <ol>
+                    <li>You'll receive a confirmation email shortly</li>
+                    <li>Your order is being prepared for shipment</li>
+                    <li>Track your package once it ships</li>
+                    <li>Receive your items and enjoy!</li>
+                </ol>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{{ url_for('shop') }}" class="btn btn-secondary">Continue Shopping</a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="support-notice">
+        <h3>Need Help?</h3>
+        <p>If you have any questions about your order, please contact our support team.</p>
+    </div>
+</div>
+{% endblock %}

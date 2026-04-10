@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Shop - {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="container shop-container">
+    <div class="shop-header">
+        <h1>Shop</h1>
+        {% if category %}
+            <p class="breadcrumb">Category: <strong>{{ category }}</strong></p>
+        {% endif %}
+        {% if search %}
+            <p class="breadcrumb">Search: <strong>{{ search }}</strong></p>
+        {% endif %}
+    </div>
+
+    <div class="shop-layout">
+        <aside class="shop-sidebar">
+            <div class="filter-section">
+                <h3>Filter & Search</h3>
+                <form action="{{ url_for('shop') }}" method="GET" class="filter-form">
+                    <div class="filter-group">
+                        <label for="search">Search</label>
+                        <input type="text" id="search" name="q" value="{{ search or '' }}" placeholder="Search...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.name }}" {% if category == cat.name %}selected{% endif %}>
+                                    {{ cat.name }} ({{ cat.count }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-block">Apply Filters</button>
+                    {% if search or category %}
+                        <a href="{{ url_for('shop') }}" class="btn btn-outline btn-block">Clear Filters</a>
+                    {% endif %}
+                </form>
+            </div>
+        </aside>
+
+        <div class="shop-main">
+            {% if products %}
+                <div class="shop-info">
+                    <p>Showing products for page {{ page }}</p>
+                </div>
+
+                <div class="products-grid">
+                    {% for product in products %}
+                        {% include 'partials/product_card.html' %}
+                    {% endfor %}
+                </div>
+
+                <div class="pagination">
+                    {% if page > 1 %}
+                        <a href="{{ url_for('shop', category=category or '', q=search or '', page=page-1) }}" class="btn btn-secondary">Previous</a>
+                    {% endif %}
+                    <span class="page-info">Page {{ page }}</span>
+                    {% if has_next %}
+                        <a href="{{ url_for('shop', category=category or '', q=search or '', page=page+1) }}" class="btn btn-secondary">Next</a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h2>No Products Found</h2>
+                    <p>Try adjusting your filters or search terms.</p>
+                    <a href="{{ url_for('shop') }}" class="btn btn-primary">Browse All Products</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

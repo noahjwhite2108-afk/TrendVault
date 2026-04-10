@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="container cart-container">
+    <h1>Shopping Cart</h1>
+
+    {% if cart %}
+        <div class="cart-layout">
+            <div class="cart-items-section">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item_id, item in cart.items() %}
+                            <tr class="cart-item" data-product-id="{{ item_id }}">
+                                <td class="item-name">
+                                    {% if item.image %}
+                                        <img src="{{ item.image }}" alt="{{ item.title }}" class="item-image">
+                                    {% endif %}
+                                    <a href="{{ url_for('product', slug=item.slug) }}">{{ item.title }}</a>
+                                </td>
+                                <td class="item-price">${{ "%.2f"|format(item.price) }}</td>
+                                <td class="item-quantity">
+                                    <input type="number" class="qty-input" value="{{ item.qty }}" min="1" data-product-id="{{ item_id }}">
+                                </td>
+                                <td class="item-total">${{ "%.2f"|format(item.price * item.qty) }}</td>
+                                <td class="item-action">
+                                    <button class="btn btn-sm btn-outline btn-remove" onclick="removeFromCart('{{ item_id }}')">Remove</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="cart-actions">
+                    <a href="{{ url_for('shop') }}" class="btn btn-outline">Continue Shopping</a>
+                </div>
+            </div>
+
+            <div class="cart-summary-section">
+                <div class="order-summary">
+                    <h2>Order Summary</h2>
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span>${{ "%.2f"|format(summary.subtotal) }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Shipping:</span>
+                        <span>
+                            {% if summary.shipping == 0 %}
+                                Free
+                            {% else %}
+                                ${{ "%.2f"|format(summary.shipping) }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="summary-row summary-total">
+                        <span>Total:</span>
+                        <span>${{ "%.2f"|format(summary.total) }}</span>
+                    </div>
+                    {% if summary.subtotal < 50 %}
+                        <p class="shipping-note">Free shipping on orders over $50! Add ${{ "%.2f"|format(50 - summary.subtotal) }} more.</p>
+                    {% endif %}
+                    <a href="{{ url_for('checkout') }}" class="btn btn-primary btn-block">Proceed to Checkout</a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h2>Your Cart is Empty</h2>
+            <p>Start shopping to add items to your cart!</p>
+            <a href="{{ url_for('shop') }}" class="btn btn-primary">Shop Now</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.qty-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const productId = this.getAttribute('data-product-id');
+        const qty = parseInt(this.value);
+        if (qty > 0) {
+            updateCart(productId, qty);
+        }
+    });
+});
+</script>
+{% endblock %}

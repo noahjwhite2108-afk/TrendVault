@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.title }} - {{ store.name }}{% endblock %}
+{% block meta_desc %}{{ product.short_desc }}{% endblock %}
+
+{% block content %}
+<div class="container product-container">
+    <div class="product-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a> /
+        <a href="{{ url_for('shop', category=product.category) }}">{{ product.category }}</a> /
+        <span>{{ product.title[:50] }}</span>
+    </div>
+
+    <div class="product-layout">
+        <div class="product-images">
+            {% if product.images %}
+                <div class="main-image">
+                    <img id="mainImage" src="{{ product.images[0] }}" alt="{{ product.title }}" loading="lazy">
+                </div>
+                {% if product.images|length > 1 %}
+                    <div class="thumbnail-strip">
+                        {% for img in product.images[:5] %}
+                            <img src="{{ img }}" alt="Thumbnail" class="thumbnail" onclick="document.getElementById('mainImage').src='{{ img }}'">
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="main-image no-image">
+                    <div class="placeholder">No Image Available</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="product-details">
+            <div class="product-header">
+                <h1 class="product-title">{{ product.title }}</h1>
+                <div class="product-rating">
+                    <span class="stars">
+                        {% if product.rating >= 4.5 %}⭐⭐⭐⭐⭐
+                        {% elif product.rating >= 4 %}⭐⭐⭐⭐
+                        {% elif product.rating >= 3 %}⭐⭐⭐
+                        {% else %}⭐⭐
+                        {% endif %}
+                    </span>
+                    <span class="rating-value">{{ product.rating }} / 5</span>
+                    <span class="orders-count">({{ product.orders_count }}+ sold)</span>
+                </div>
+            </div>
+
+            <div class="product-pricing">
+                <div class="price-section">
+                    <span class="sale-price">${{ "%.2f"|format(product.price) }}</span>
+                    {% if product.compare_price and product.compare_price > product.price %}
+                        <span class="compare-price">${{ "%.2f"|format(product.compare_price) }}</span>
+                        <span class="discount">Save {{ "%.0f"|format((1 - product.price / product.compare_price) * 100) }}%</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if product.short_desc %}
+                <p class="product-short-desc">{{ product.short_desc }}</p>
+            {% endif %}
+
+            <div class="product-actions">
+                <form id="addToCartForm" class="add-to-cart-form">
+                    <div class="quantity-selector">
+                        <label for="quantity">Quantity:</label>
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product.stock }}" class="quantity-input">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-add-to-cart">
+                        Add to Cart
+                    </button>
+                </form>
+                <div class="product-features">
+                    <p>✓ Fast worldwide shipping</p>
+                    <p>✓ 30-day satisfaction guarantee</p>
+                    <p>✓ Secure checkout</p>
+                </div>
+            </div>
+
+            {% if product.tags %}
+                <div class="product-tags">
+                    {% for tag in product.tags[:5] %}
+                        <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if product.description %}
+        <section class="product-description">
+            <h2>Product Details</h2>
+            <div class="description-content">
+                {{ product.description|safe }}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if related %}
+        <section class="related-products">
+            <h2>Related Products</h2>
+            <div class="products-grid">
+                {% for rel in related %}
+                    {% include 'partials/product_card.html' with product=rel %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+
+<script>
+document.getElementById('addToCartForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const quantity = parseInt(document.getElementById('quantity').value) || 1;
+    addToCart('{{ product.id }}', quantity);
+});
+</script>
+{% endblock %}

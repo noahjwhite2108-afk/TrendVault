@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Home - {{ store.name }}{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Today's Best Deals, Delivered Fast</h1>
+        <p class="hero-subtitle">Discover trending products at unbeatable prices</p>
+        <a href="{{ url_for('shop') }}" class="btn btn-primary btn-lg">Shop Now</a>
+    </div>
+</section>
+
+<section class="value-props">
+    <div class="container">
+        <div class="props-grid">
+            <div class="prop-item">
+                <div class="prop-icon">🚚</div>
+                <h3>Fast Shipping</h3>
+                <p>Get your products quickly with worldwide delivery</p>
+            </div>
+            <div class="prop-item">
+                <div class="prop-icon">🛡️</div>
+                <h3>Secure Payments</h3>
+                <p>Safe checkout with Stripe encryption</p>
+            </div>
+            <div class="prop-item">
+                <div class="prop-icon">⭐</div>
+                <h3>Quality Guaranteed</h3>
+                <p>Trusted products from verified suppliers</p>
+            </div>
+            <div class="prop-item">
+                <div class="prop-icon">💰</div>
+                <h3>Best Prices</h3>
+                <p>Competitive pricing with regular discounts</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if featured %}
+<section class="featured-section">
+    <div class="container">
+        <h2 class="section-title">Featured Products</h2>
+        <div class="products-grid">
+            {% for product in featured %}
+                {% include 'partials/product_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="categories-section">
+    <div class="container">
+        <h2 class="section-title">Shop by Category</h2>
+        <div class="categories-grid">
+            {% for cat in categories %}
+                <a href="{{ url_for('shop', category=cat.name) }}" class="category-card">
+                    <div class="category-icon">🏷️</div>
+                    <h3>{{ cat.name }}</h3>
+                    <p>{{ cat.count }} products</p>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% if recent %}
+<section class="recent-section">
+    <div class="container">
+        <h2 class="section-title">New Arrivals</h2>
+        <div class="products-grid">
+            {% for product in recent %}
+                {% include 'partials/product_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-card">
+            <h2>Don't Miss Out</h2>
+            <p>New trending deals added daily. Check back often for fresh finds!</p>
+            <a href="{{ url_for('shop') }}" class="btn btn-primary">Browse All Products</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
