@@ -98,6 +98,16 @@ def inject_globals():
     }
 
 
+@app.route("/debug-db")
+def debug_db():
+    import sqlite3
+    stats = db.get_stats()
+    products = db.get_products(limit=5)
+    rows = []
+    for p in products:
+        rows.append(f"{p['id']} | {p['title'][:40]} | images: {p['images']}")
+    return "<pre>Stats: " + str(stats) + "\n\nProducts:\n" + "\n".join(rows) + "</pre>"
+
 @app.route("/")
 def index():
     featured = db.get_products(featured_only=True, limit=8)
