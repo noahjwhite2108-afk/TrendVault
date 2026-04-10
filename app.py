@@ -19,8 +19,21 @@ from flask import (
 )
 import database as db
 
-with open("config.json") as f:
-    CONFIG = json.load(f)
+try:
+    with open("config.json") as f:
+        CONFIG = json.load(f)
+except FileNotFoundError:
+    CONFIG = {"store":{"name":"TrendVault","tagline":"Today's Best Deals","domain":"localhost:5000","currency":"USD","admin_password":"change_me_before_launch","secret_key":"default_secret_key"},"payments":{"stripe_publishable_key":"pk_test_YOUR","stripe_secret_key":"sk_test_YOUR","stripe_webhook_secret":"whsec_YOUR"},"ai":{"provider":"gemini","api_key":"YOUR","model":"gemini-1.5-flash"},"supplier":{"platform":"aliexpress","affiliate_app_key":"","affiliate_app_secret":"","affiliate_tracking_id":""},"product_discovery":{"search_keywords":["trending gadgets","home organization","fitness accessories","phone accessories","kitchen tools"],"min_rating":4.5,"min_orders":500,"max_supplier_price_usd":30,"markup_multiplier":2.8,"shipping_buffer_usd":3.0,"products_per_keyword":5,"max_new_products_per_run":20,"exclude_categories":[]},"automation":{"product_sync_hours":24,"enabled":True}}
+
+# Override config with environment variables if set (for Railway/cloud deployment)
+if os.environ.get("GEMINI_API_KEY"):
+    CONFIG["ai"]["api_key"] = os.environ["GEMINI_API_KEY"]
+if os.environ.get("STRIPE_SECRET_KEY"):
+    CONFIG["payments"]["stripe_secret_key"] = os.environ["STRIPE_SECRET_KEY"]
+if os.environ.get("STRIPE_PUBLISHABLE_KEY"):
+    CONFIG["payments"]["stripe_publishable_key"] = os.environ["STRIPE_PUBLISHABLE_KEY"]
+if os.environ.get("ADMIN_PASSWORD"):
+    CONFIG["store"]["admin_password"] = os.environ["ADMIN_PASSWORD"]
 
 STORE = CONFIG["store"]
 STRIPE_PUB = CONFIG["payments"]["stripe_publishable_key"]
@@ -41,6 +54,22 @@ except ImportError:
     STRIPE_OK = False
 
 db.init_db()
+
+# Auto-seed products if the database is empty (runs on every startup, including gunicorn/Railway)
+def _auto_seed():
+    try:
+        stats = db.get_stats()
+        if stats.get("products", 0) == 0:
+            from seed_products import PRODUCTS
+            count = 0
+            for p in PRODUCTS:
+                if db.upsert_product(p):
+                    count += 1
+            logger.info(f"Auto-seeded {count} products into empty database")
+    except Exception as e:
+        logger.warning(f"Auto-seed failed: {e}")
+
+_auto_seed()
 
 
 @app.context_processor
