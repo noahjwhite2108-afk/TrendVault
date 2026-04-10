@@ -58,14 +58,10 @@ db.init_db()
 # Auto-seed products if the database is empty (runs on every startup, including gunicorn/Railway)
 def _auto_seed():
     try:
-        stats = db.get_stats()
-        if stats.get("products", 0) == 0:
-            from seed_products import PRODUCTS
-            count = 0
-            for p in PRODUCTS:
-                if db.upsert_product(p):
-                    count += 1
-            logger.info(f"Auto-seeded {count} products into empty database")
+        from seed_products import PRODUCTS
+        for p in PRODUCTS:
+            db.upsert_product(p)
+        logger.info(f"Seeded/refreshed {len(PRODUCTS)} products with images")
     except Exception as e:
         logger.warning(f"Auto-seed failed: {e}")
 
